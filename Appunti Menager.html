@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FastAppunti</title>
+  <link rel="icon" type="image/png" href="fastappunti-icon.png" />
+  <script src="theme.js?v=2.5"></script>
+  <link rel="stylesheet" href="styles.css?v=2.5" />
+</head>
+<body data-default-view="list">
+  <div class="app-shell">
+    <nav class="workspace-tabs" aria-label="Cartella FastAppunti">
+      <a class="workspace-tab active" href="Appunti Menager.html?view=list" data-workspace="notes" aria-current="page"><img class="workspace-icon" src="fastappunti-icon.png" alt="" /> FastAppunti</a>
+      <a class="workspace-tab" href="Appunti Plus.html?view=tool" data-workspace="tool"><img class="workspace-icon" src="fastappunti-icon.png" alt="" /> Appunti Plus</a>
+      <!-- Pannello rapido disattivato: togli i commenti per riattivarlo.
+      <button class="quick-panel-top" type="button" data-open-quick-panel>Apri pannello rapido</button> -->
+      <button class="btn theme-toggle" type="button" data-toggle-theme>Tema scuro</button>
+    </nav>
+
+    <header class="topbar">
+      <a class="brand" href="?view=list" data-route="list" aria-label="Vai all'elenco appunti">
+        <img class="brand-mark" src="fastappunti-icon.png" alt="" />
+        <span>
+          <h1>Appunti Rapidi</h1>
+          <p>Scrivi, trova e copia in un clic.</p>
+        </span>
+      </a>
+      <nav class="nav-actions" aria-label="Navigazione principale">
+        <a class="btn ghost" href="?view=list" data-route="list">Elenco</a>
+        <a class="btn primary" href="?view=new" data-route="new">Nuovo appunto</a>
+        <a class="btn" href="?view=backup" data-route="backup">Import / export</a>
+      </nav>
+    </header>
+
+    <main id="view"></main>
+  </div>
+
+  <div class="toast-stack" id="toastStack" aria-live="polite" aria-atomic="true"></div>
+  <script src="app.js?v=2.5"></script>
+</body>
+</html>
