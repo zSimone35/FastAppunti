@@ -476,7 +476,7 @@
           const token = uid();
           const iframe = document.createElement("iframe");
           const channel = new MessageChannel();
-          const target = DEFAULT_VIEW === "tool" ? "Appunti Menager.html" : "Appunti Plus.html";
+          const target = DEFAULT_VIEW === "tool" ? "appunti.html" : "appunti-plus.html";
           const url = new URL(target, location.href);
           url.search = "";
           url.searchParams.set("storageBridge", token);

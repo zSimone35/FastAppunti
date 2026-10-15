@@ -9,7 +9,11 @@ A notes and text-template manager that lives entirely in your browser: no server
 
 `100% client-side` · `zero dependencies` · `no server` · `works offline` · `about 230 KB`
 
+**[▶ Try it online](https://zsimone35.github.io/FastAppunti/)** · **[Download](https://github.com/zSimone35/FastAppunti/releases/latest)**
+
 </div>
+
+> 🇮🇹 **In italiano:** FastAppunti è un **gestore di appunti e modelli di testo gratuito e open source** che funziona nel browser, **offline**, senza account né server. Salva i testi che scrivi sempre (risposte ai clienti, firme email, IBAN, dati di fatturazione, comandi) e **copiali in un clic**; con **Appunti Plus** compili modelli con campi e **calcoli automatici** (somme, totali) e ottieni il testo pronto da incollare. Puoi lavorare su più modelli insieme, in finestre. **[Provalo subito online](https://zsimone35.github.io/FastAppunti/)** oppure scarica lo ZIP e apri `appunti.html`.
 
 ---
 
@@ -24,7 +28,7 @@ It is **two applications** in the same folder, linked by a bar at the top:
 | **Used for** | Fixed texts to reuse | Fillable templates with fields and calculations |
 | **Example** | Email signature, IBAN, recurring command | Invoice reminder with automatic total |
 | **Main action** | **Quick copy** | **Fill in → Generate → Copy** |
-| **File to open** | `Appunti Menager.html` | `Appunti Plus.html` |
+| **File to open** | `appunti.html` | `appunti-plus.html` |
 
 <p align="center">
   <img src="docs/img/notes-light.png" alt="Notes list, light theme" width="49%" />
@@ -69,7 +73,7 @@ or download the ZIP from GitHub (**Code → Download ZIP**) and unzip it.
 
 ### 2. Open it
 
-Double-click **`Appunti Menager.html`** (or `Appunti Plus.html`). It opens in your default browser.
+Double-click **`appunti.html`** (or `appunti-plus.html`). It opens in your default browser.
 
 That's all. On first launch you will find a few ready-made examples to try; when you no longer need them, the **Elimina esempi** ("Delete examples") button removes them all at once.
 
@@ -197,8 +201,10 @@ For Appunti Plus the export contains only templates, placeholders and operations
 
 ```text
 .
-├── Appunti Menager.html   # FastAppunti: notes to copy
-├── Appunti Plus.html      # Appunti Plus: templates with fields and calculations
+├── index.html             # presentation page (GitHub Pages)
+├── sitemap.xml            # page list for search engines
+├── appunti.html           # FastAppunti: notes to copy
+├── appunti-plus.html      # Appunti Plus: templates with fields and calculations
 ├── app.js                 # application logic
 ├── quick-panel.js         # quick panel
 ├── theme.js               # light / dark theme
