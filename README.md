@@ -33,6 +33,14 @@ It is **two applications** in the same folder, linked by a bar at the top:
 
 > **Note:** the application interface is in Italian.
 
+### New in 2.6: work in windows
+
+Forms now open as **windows inside the page**: fill in several templates at once, minimize them to the **taskbar at the bottom** and pick them up again with one click. [See how it works ↓](#windows-and-taskbar)
+
+<p align="center">
+  <img src="docs/img/plus-windows.png" alt="Three Appunti Plus templates open as windows, one minimized in the bottom taskbar" width="85%" />
+</p>
+
 ---
 
 ## Everything runs on your computer
@@ -84,7 +92,7 @@ Create a note with a title, text and tags. From the list you copy it with **Copi
 - Light and dark theme (follows the system, or you choose)
 
 <p align="center">
-  <img src="docs/img/note-new.png" alt="Creating a new note" width="70%" />
+  <img src="docs/img/note-new.png" alt="Creating a new note in a window over the list" width="70%" />
 </p>
 
 ---
@@ -156,6 +164,11 @@ In both apps, the forms for entering data open as **windows inside the page**, l
 - The **active window** comes to the front and has a coloured outline. **Enter** only acts on that window, even when two or three are open.
 - A **taskbar at the bottom** lists every open window. Click a button to restore that window or bring it to the front. Click the active one again to minimize it.
 - Windows stay open while you switch views on the same page, for example to *Import / export*.
+
+<p align="center">
+  <img src="docs/img/notes-windows.png" alt="Appunti Rapidi: editing one note and writing a new one in two windows, a third minimized in the taskbar" width="49%" />
+  <img src="docs/img/plus-windows.png" alt="Appunti Plus: two templates filled in side by side, the active one outlined in blue" width="49%" />
+</p>
 
 ---
 
