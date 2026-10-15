@@ -80,7 +80,7 @@ Create a note with a title, text and tags. From the list you copy it with **Copi
 - Instant search by title, text or tag
 - Tag filter
 - **Favourite** notes pinned up front
-- Edit and delete from the card
+- New, edit and delete in **windows** over the list, so you can keep several notes open at once
 - Light and dark theme (follows the system, or you choose)
 
 <p align="center">
@@ -134,6 +134,10 @@ The app adds up the last number of each line and produces the complete text, wit
   <img src="docs/img/plus-edit.png" alt="Template editor with configurable fields" width="80%" />
 </p>
 
+### Fill in several templates at once
+
+Each **Compila** opens its own window, so you can work on different templates side by side. Clicking *Compila* on a template that is already open brings its window back to the front.
+
 ### "Ultra rapida" (ultra-fast) mode
 
 For templates with a single manual field, turning on **Ultra rapida** lets one click on *Compila* ("Fill in") do everything: the app reads the text already on your clipboard, processes it with the template and puts the result back on the clipboard. If the content does not match, it tells you why instead of producing a wrong text.
@@ -141,6 +145,17 @@ For templates with a single manual field, turning on **Ultra rapida** lets one c
 ### 12 built-in example templates
 
 From the simplest to the most complete: shopping list, appointment reminder, customer email, invoice reminder, hours report, expense report, area or volume, remaining budget, meeting minutes, order confirmation, mileage reimbursement, release notes.
+
+---
+
+## Windows and taskbar
+
+In both apps, the forms for entering data open as **windows inside the page**, like on Windows:
+
+- Drag a window by its title bar. Each one has **–** (minimize) and **×** (close).
+- The **active window** comes to the front and has a coloured outline. **Enter** only acts on that window, even when two or three are open.
+- A **taskbar at the bottom** lists every open window. Click a button to restore that window or bring it to the front. Click the active one again to minimize it.
+- Windows stay open while you switch views on the same page, for example to *Import / export*.
 
 ---
 
@@ -193,4 +208,4 @@ node test-fields.cjs
 
 ## License
 
-Released under the [MIT License](LICENSE). Current version: **release 2.5**.
+Released under the [MIT License](LICENSE). Current version: **release 2.6**.

@@ -224,6 +224,8 @@
         editId: null,
         plusDraft: null,
         plusCursor: null,
+        windowSeq: 0,
+        windowZ: 100,
         quickPanel: { window: null, port: null, token: "", mode: "", preferPopup: false },
         storageBridge: { iframe: null, port: null, pending: new Map(), counter: 0, promise: null }
       };
@@ -1154,49 +1156,41 @@
         await syncQuickPanelState();
       }
 
-      function formTemplate(note) {
-        const isEdit = Boolean(note);
-        return `
-          <section class="hero">
-            <div>
-              <h2>${isEdit ? "Modifica appunto." : "Nuovo appunto."}</h2>
-              <p>${isEdit ? "Aggiorna il testo mantenendo la copia veloce sulla scheda principale." : "Scrivi testo e tag: l'appunto sarà salvato in IndexedDB e subito disponibile nell'elenco."}</p>
-            </div>
-          </section>
-          <form class="panel form-grid" id="noteForm">
+      async function openNoteWindow(id) {
+        const note = id ? await getNote(id) : null;
+        if (id && !note) return toast("Appunto non trovato.", "danger");
+        const existing = id && findAppWindow(`note:${id}`);
+        if (existing) return focusAppWindow(existing);
+        const title = note ? `Modifica: ${note.title || "Senza titolo"}` : "Nuovo appunto";
+        const dialog = createAppWindow("note-window", note ? `note:${note.id}` : `note-new:${state.windowSeq + 1}`, title);
+        const win = dialog.dataset.windowId;
+        dialog.dataset.noteId = note ? note.id : "";
+        dialog.innerHTML = `
+          <form class="quick-dialog-form" data-note-form>
+            ${windowTitlebar(`windowTitle-${win}`, title, "Trascina per spostare")}
             <div class="form-row">
-              <label for="noteTitle">Titolo</label>
-              <input class="field" id="noteTitle" name="title" maxlength="120" value="${escapeHtml(note && note.title)}" placeholder="Es. Risposta cliente, snippet email, comando ricorrente" required />
+              <label for="noteTitle-${win}">Titolo</label>
+              <input class="field" id="noteTitle-${win}" name="title" maxlength="120" value="${escapeHtml(note && note.title)}" placeholder="Es. Risposta cliente, snippet email, comando ricorrente" required />
             </div>
             <div class="form-row">
-              <label for="noteText">Testo dell'appunto</label>
-              <textarea class="field" id="noteText" name="text" placeholder="Questo è il contenuto copiato dal pulsante Copia veloce." required>${escapeHtml(note && note.text)}</textarea>
+              <label for="noteText-${win}">Testo dell'appunto</label>
+              <textarea class="field" id="noteText-${win}" name="text" placeholder="Questo è il contenuto copiato dal pulsante Copia veloce." required>${escapeHtml(note && note.text)}</textarea>
               <small>Il pulsante Copia veloce copierà solo questo campo.</small>
             </div>
             <div class="form-row">
-              <label for="noteTags">Tag</label>
-              <input class="field" id="noteTags" name="tags" value="${escapeHtml(note && (note.tags || []).join(", "))}" placeholder="lavoro, personale, snippet" />
+              <label for="noteTags-${win}">Tag</label>
+              <input class="field" id="noteTags-${win}" name="tags" value="${escapeHtml(note && (note.tags || []).join(", "))}" placeholder="lavoro, personale, snippet" />
               <small>Separa i tag con una virgola.</small>
             </div>
-            <div class="form-actions">
-              <a class="btn" href="?view=list" data-route="list">Annulla</a>
-              ${isEdit ? `<button class="btn danger" type="button" id="deleteFromEdit">Elimina</button>` : ""}
-              <button class="btn primary" type="submit">${isEdit ? "Salva modifiche" : "Salva appunto"}</button>
+            <div class="quick-dialog-actions">
+              <button class="btn" type="button" data-window-close>Annulla</button>
+              ${note ? `<button class="btn danger" type="button" data-note-delete>Elimina</button>` : ""}
+              <button class="btn primary" type="submit">${note ? "Salva modifiche" : "Salva appunto"}</button>
             </div>
           </form>
         `;
-      }
-
-      async function renderForm(id) {
-        const note = id ? await getNote(id) : null;
-        if (id && !note) {
-          toast("Appunto non trovato.", "danger");
-          await transitionTo("list", null, true);
-          return;
-        }
-        renderShell(id ? "edit" : "new", formTemplate(note));
-        const textArea = $("#noteText");
-        if (textArea) textArea.focus();
+        showAppWindow(dialog);
+        $(`#noteText-${win}`, dialog).focus();
       }
 
       function backupTemplate() {
@@ -1298,37 +1292,8 @@
           </section>
           <div class="plus-ultra-status" id="plusUltraStatus" role="status" hidden></div>
           <section id="plusRegion" class="notes-list" aria-label="Elenco Appunti Plus"></section>
-          <dialog class="quick-dialog plus-run-dialog" id="plusRunDialog" aria-labelledby="plusRunTitle">
-            <form class="quick-dialog-form" id="plusRunForm" novalidate>
-              <header class="plus-dialog-titlebar" id="plusDialogTitlebar">
-                <h2 id="plusRunTitle">Compila modello</h2>
-                <small>Trascina per spostare · usa l’angolo in basso a destra per ridimensionare</small>
-              </header>
-              <div class="quick-plus-fields" id="plusRunFields"></div>
-              <div class="error-summary" id="plusRunErrors" role="alert" hidden></div>
-              <div class="warning-box" id="plusRunWarnings" role="status" hidden></div>
-              <section class="plus-dialog-result" id="plusRunResult" aria-labelledby="plusRunResultTitle" hidden>
-                <h3 id="plusRunResultTitle">Anteprima</h3>
-                <small>Puoi modificare il testo qui sotto; il pulsante Copia userà la versione modificata.</small>
-                <textarea class="field plus-preview quick-plus-preview" id="plusPreview" aria-label="Testo finale modificabile" aria-live="polite"></textarea>
-              </section>
-              <div class="quick-dialog-actions">
-                <button class="btn" id="closePlusRunDialog" type="button">Chiudi</button>
-                <button class="btn copy" id="copyPlusResult" type="button" disabled>Copia</button>
-                <button class="btn primary" id="submitPlusRun" type="submit">Genera</button>
-              </div>
-            </form>
-          </dialog>
         `);
         renderPlusCards();
-        $("#plusRunDialog").addEventListener("close", resetPlusDialog);
-        enableMovablePlusDialog($("#plusRunDialog"));
-        $("#plusRunForm").addEventListener("keydown", event => {
-          const field = event.target.closest("[data-plus-value]");
-          if (!field || event.key !== "Enter" || event.isComposing || $("#submitPlusRun").disabled || (field.matches("textarea") && event.shiftKey)) return;
-          event.preventDefault();
-          event.currentTarget.requestSubmit($("#submitPlusRun"));
-        });
         if (state.plusUltra) setPlusUltraStatus("Modalità ultra rapida attiva: scegli una scheda per elaborare il contenuto degli appunti.");
       }
 
@@ -1657,33 +1622,94 @@
         if (!window.confirm(`Eliminare “${template.title}”?`)) return;
         await deletePlusTemplate(id);
         await syncQuickPanelState();
+        closeAppWindow(findAppWindow(`plus:${id}`));
         toast("Modello eliminato.", "danger");
         await transitionTo("tool", null, true);
       }
 
-      function resetPlusDialog() {
-        const dialog = $("#plusRunDialog");
-        if (!dialog) return;
-        dialog.dataset.plusId = "";
-        $("#plusRunForm").reset();
-        $("#plusRunFields").replaceChildren();
-        $("#plusRunErrors").replaceChildren();
-        $("#plusRunErrors").hidden = true;
-        $("#plusRunWarnings").replaceChildren();
-        $("#plusRunWarnings").hidden = true;
-        $("#plusPreview").value = "";
-        $("#plusRunResult").hidden = true;
-        $("#copyPlusResult").disabled = true;
-        $("#submitPlusRun").disabled = false;
+      // Finestre interne alla pagina: non modali, riducibili a icona nella barra in basso.
+      const appWindows = () => $$("#windowLayer > .app-window");
+      const findAppWindow = key => appWindows().find(item => item.dataset.windowKey === key);
+
+      function windowTitlebar(titleId, title, hint) {
+        return `
+          <header class="plus-dialog-titlebar window-titlebar">
+            <h2 id="${titleId}">${escapeHtml(title)}</h2>
+            <small>${hint}</small>
+            <div class="window-controls">
+              <button class="window-control" type="button" data-window-minimize aria-label="Riduci a icona" title="Riduci a icona">–</button>
+              <button class="window-control close" type="button" data-window-close aria-label="Chiudi" title="Chiudi">×</button>
+            </div>
+          </header>`;
       }
 
-      function enableMovablePlusDialog(dialog) {
-        const handle = $("#plusDialogTitlebar", dialog);
+      function createAppWindow(className, key, title) {
+        const dialog = document.createElement("dialog");
+        state.windowSeq += 1;
+        dialog.className = `quick-dialog app-window ${className}`;
+        dialog.dataset.windowId = String(state.windowSeq);
+        dialog.dataset.windowKey = key;
+        dialog.dataset.windowTitle = title;
+        dialog.setAttribute("aria-labelledby", `windowTitle-${state.windowSeq}`);
+        return dialog;
+      }
+
+      function showAppWindow(dialog) {
+        const offset = (appWindows().length % 8) * 28;
+        $("#windowLayer").append(dialog);
+        dialog.show();
+        enableMovableWindow(dialog);
+        const rect = dialog.getBoundingClientRect();
+        dialog.style.left = `${Math.max(0, Math.min(window.innerWidth - rect.width, (window.innerWidth - rect.width) / 2 + offset))}px`;
+        dialog.style.top = `${Math.max(0, Math.min(window.innerHeight - rect.height, (window.innerHeight - rect.height) / 2 + offset))}px`;
+        focusAppWindow(dialog);
+      }
+
+      function focusAppWindow(dialog) {
+        dialog.hidden = false;
+        appWindows().forEach(item => item.classList.toggle("is-active", item === dialog));
+        state.windowZ += 1;
+        dialog.style.zIndex = String(state.windowZ);
+        if (!dialog.contains(document.activeElement)) $("[data-plus-value], .field", dialog)?.focus();
+        renderTaskbar();
+      }
+
+      function focusTopWindow() {
+        const top = appWindows().filter(item => !item.hidden).sort((a, b) => Number(b.style.zIndex) - Number(a.style.zIndex))[0];
+        if (top) focusAppWindow(top);
+        else renderTaskbar();
+      }
+
+      function minimizeAppWindow(dialog) {
+        dialog.hidden = true;
+        dialog.classList.remove("is-active");
+        focusTopWindow();
+      }
+
+      function closeAppWindow(dialog) {
+        if (!dialog) return;
+        dialog.close();
+        dialog.remove();
+        focusTopWindow();
+      }
+
+      function renderTaskbar() {
+        const taskbar = $("#taskbar");
+        if (!taskbar) return;
+        const windows = appWindows();
+        taskbar.hidden = !windows.length;
+        taskbar.innerHTML = windows.map(item => `
+          <button class="taskbar-item${item.classList.contains("is-active") ? " active" : ""}${item.hidden ? " minimized" : ""}" type="button" data-window-target="${item.dataset.windowId}" aria-pressed="${item.classList.contains("is-active")}" title="${escapeHtml(item.dataset.windowTitle)}">${escapeHtml(item.dataset.windowTitle)}</button>
+        `).join("");
+      }
+
+      function enableMovableWindow(dialog) {
+        const handle = $(".window-titlebar", dialog);
         if (!handle) return;
         let drag = null;
 
         handle.addEventListener("pointerdown", event => {
-          if (event.button !== 0) return;
+          if (event.button !== 0 || event.target.closest("button")) return;
           const rect = dialog.getBoundingClientRect();
           dialog.style.left = `${rect.left}px`;
           dialog.style.top = `${rect.top}px`;
@@ -1713,9 +1739,7 @@
         handle.addEventListener("pointercancel", stopDragging);
       }
 
-      function renderPlusRunErrors(errors) {
-        const dialog = $("#plusRunDialog");
-        if (!dialog) return;
+      function renderPlusRunErrors(dialog, errors) {
         $$('[data-plus-value]', dialog).forEach(field => {
           field.removeAttribute("aria-invalid");
           field.removeAttribute("aria-describedby");
@@ -1731,12 +1755,12 @@
           const detail = $$('[data-run-error-for]', dialog).find(item => item.dataset.runErrorFor === name);
           if (field) {
             field.setAttribute("aria-invalid", "true");
-            field.setAttribute("aria-describedby", `plusRunError-${name}`);
+            field.setAttribute("aria-describedby", `plusRunError-${dialog.dataset.windowId}-${name}`);
           }
           if (detail) detail.textContent = messages.join(" ");
         });
         const summaryErrors = errors.filter(error => !error.target.startsWith("value:"));
-        const summary = $("#plusRunErrors");
+        const summary = $("[data-plus-run-errors]", dialog);
         summary.hidden = !summaryErrors.length;
         summary.innerHTML = summaryErrors.length ? `<strong>Impossibile calcolare il testo:</strong><ul>${summaryErrors.map(error => `<li>${escapeHtml(error.message)}</li>`).join("")}</ul>` : "";
       }
@@ -1789,70 +1813,86 @@
       function openPlusDialog(id) {
         const template = state.plusTemplates.find(item => item.id === id);
         if (!template) return toast("Modello non trovato.", "danger");
-        resetPlusDialog();
-        const dialog = $("#plusRunDialog");
+        const existing = findAppWindow(`plus:${id}`);
+        if (existing) return focusAppWindow(existing);
+        const title = template.title || "Compila modello";
+        const dialog = createAppWindow("plus-run-dialog", `plus:${id}`, title);
+        const win = dialog.dataset.windowId;
         dialog.dataset.plusId = id;
-        $("#plusRunTitle").textContent = template.title || "Compila modello";
-        $("#plusRunFields").innerHTML = template.fields.filter(field => field.kind === "manual").map(field => `
-          <div class="form-row">
-            <label for="plusValue-${escapeHtml(field.name)}">${escapeHtml(field.inputType === "checkbox" ? field.label || field.name : field.name)}${field.inputType !== "checkbox" && field.required === false ? " · facoltativo" : ""}</label>
-            ${field.inputType === "checkbox"
-              ? `<input type="checkbox" id="plusValue-${escapeHtml(field.name)}" data-plus-value="${escapeHtml(field.name)}" /><small>${escapeHtml(field.checkedText)}</small>`
-              : field.inputType === "textarea"
-              ? `<textarea class="field" id="plusValue-${escapeHtml(field.name)}" data-plus-value="${escapeHtml(field.name)}" ${field.required !== false ? "required" : ""}></textarea>
-                <small class="field-resize-hint">Per cambiare l’altezza, trascina su o giù l’angolo rigato in basso a destra.</small>`
-              : `<input class="field" id="plusValue-${escapeHtml(field.name)}" data-plus-value="${escapeHtml(field.name)}" ${field.required !== false ? "required" : ""} />`}
-            ${field.inputType === "textarea" && field.lineInputPattern && field.lineOutputPattern
-              ? `<aside class="list-instructions"><strong>Trasformazione automatica</strong><span>Input: ${escapeHtml(field.lineInputPattern)}\nOutput: ${escapeHtml(field.lineOutputPattern)}</span></aside>`
-              : ""}
-            ${field.inputType === "textarea" && field.listInstructions
-              ? `<aside class="list-instructions"><strong>Indicazioni per la lista</strong><span>${escapeHtml(field.listInstructions)}</span></aside>`
-              : ""}
-            <div class="field-error" id="plusRunError-${escapeHtml(field.name)}" data-run-error-for="${escapeHtml(field.name)}"></div>
-          </div>
-        `).join("");
+        dialog.innerHTML = `
+          <form class="quick-dialog-form" data-plus-run-form novalidate>
+            ${windowTitlebar(`windowTitle-${win}`, title, "Trascina per spostare · usa l’angolo in basso a destra per ridimensionare")}
+            <div class="quick-plus-fields" data-plus-run-fields>${template.fields.filter(field => field.kind === "manual").map(field => `
+              <div class="form-row">
+                <label for="plusValue-${win}-${escapeHtml(field.name)}">${escapeHtml(field.inputType === "checkbox" ? field.label || field.name : field.name)}${field.inputType !== "checkbox" && field.required === false ? " · facoltativo" : ""}</label>
+                ${field.inputType === "checkbox"
+                  ? `<input type="checkbox" id="plusValue-${win}-${escapeHtml(field.name)}" data-plus-value="${escapeHtml(field.name)}" /><small>${escapeHtml(field.checkedText)}</small>`
+                  : field.inputType === "textarea"
+                  ? `<textarea class="field" id="plusValue-${win}-${escapeHtml(field.name)}" data-plus-value="${escapeHtml(field.name)}" ${field.required !== false ? "required" : ""}></textarea>
+                    <small class="field-resize-hint">Per cambiare l’altezza, trascina su o giù l’angolo rigato in basso a destra.</small>`
+                  : `<input class="field" id="plusValue-${win}-${escapeHtml(field.name)}" data-plus-value="${escapeHtml(field.name)}" ${field.required !== false ? "required" : ""} />`}
+                ${field.inputType === "textarea" && field.lineInputPattern && field.lineOutputPattern
+                  ? `<aside class="list-instructions"><strong>Trasformazione automatica</strong><span>Input: ${escapeHtml(field.lineInputPattern)}\nOutput: ${escapeHtml(field.lineOutputPattern)}</span></aside>`
+                  : ""}
+                ${field.inputType === "textarea" && field.listInstructions
+                  ? `<aside class="list-instructions"><strong>Indicazioni per la lista</strong><span>${escapeHtml(field.listInstructions)}</span></aside>`
+                  : ""}
+                <div class="field-error" id="plusRunError-${win}-${escapeHtml(field.name)}" data-run-error-for="${escapeHtml(field.name)}"></div>
+              </div>
+            `).join("")}</div>
+            <div class="error-summary" data-plus-run-errors role="alert" hidden></div>
+            <div class="warning-box" data-plus-run-warnings role="status" hidden></div>
+            <section class="plus-dialog-result" data-plus-run-result aria-labelledby="plusRunResultTitle-${win}">
+              <h3 id="plusRunResultTitle-${win}">Anteprima</h3>
+              <small>Puoi modificare il testo qui sotto; il pulsante Copia userà la versione modificata.</small>
+              <textarea class="field plus-preview quick-plus-preview" data-plus-preview aria-label="Testo finale modificabile" aria-live="polite" placeholder="Compila i campi e premi Genera per vedere il risultato."></textarea>
+            </section>
+            <div class="quick-dialog-actions">
+              <button class="btn" type="button" data-window-close>Chiudi</button>
+              <button class="btn copy" type="button" data-plus-copy disabled>Copia</button>
+              <button class="btn primary" type="submit" data-plus-submit>Genera</button>
+            </div>
+          </form>
+        `;
 
         const configErrors = validatePlusConfig(template.title, template.template, template.fields || []);
         if (configErrors.length) {
-          const summary = $("#plusRunErrors");
+          const summary = $("[data-plus-run-errors]", dialog);
           summary.hidden = false;
           summary.innerHTML = `<strong>Il modello contiene errori:</strong><ul>${configErrors.map(error => `<li>${escapeHtml(error.message)}</li>`).join("")}</ul>`;
-          $("#submitPlusRun").disabled = true;
+          $("[data-plus-submit]", dialog).disabled = true;
         }
-        dialog.showModal();
-        $("#plusRunResult").hidden = false;
-        $("#plusPreview").placeholder = "Compila i campi e premi Genera per vedere il risultato.";
-        if (!dialog.dataset.positioned) {
-          const rect = dialog.getBoundingClientRect();
-          dialog.style.left = `${Math.max(0, (window.innerWidth - rect.width) / 2)}px`;
-          dialog.style.top = `${Math.max(0, (window.innerHeight - rect.height) / 2)}px`;
-          dialog.style.margin = "0";
-          dialog.dataset.positioned = "true";
-        }
-        $("[data-plus-value]", dialog)?.focus();
+        // Invio genera solo nella finestra in cui si sta scrivendo.
+        $("[data-plus-run-form]", dialog).addEventListener("keydown", event => {
+          const field = event.target.closest("[data-plus-value]");
+          const submit = $("[data-plus-submit]", dialog);
+          if (!field || event.key !== "Enter" || event.isComposing || submit.disabled || (field.matches("textarea") && event.shiftKey)) return;
+          event.preventDefault();
+          event.currentTarget.requestSubmit(submit);
+        });
+        showAppWindow(dialog);
       }
 
-      async function submitPlusDialog() {
-        const dialog = $("#plusRunDialog");
-        const template = state.plusTemplates.find(item => item.id === dialog?.dataset.plusId);
+      async function submitPlusDialog(dialog) {
+        const template = state.plusTemplates.find(item => item.id === dialog.dataset.plusId);
         if (!template) return toast("Modello non trovato.", "danger");
         const fields = $$('[data-plus-value]', dialog);
         const values = Object.fromEntries(fields.map(field => [field.dataset.plusValue, field.type === "checkbox" ? field.checked : field.value]));
         const result = buildPlusOutput(template.template, template.fields, values);
-        renderPlusRunErrors(result.errors);
+        renderPlusRunErrors(dialog, result.errors);
 
-        const warning = $("#plusRunWarnings");
+        const warning = $("[data-plus-run-warnings]", dialog);
         warning.hidden = !result.warnings.length;
         warning.innerHTML = result.warnings.length ? `<strong>Alcune righe non sono state elaborate:</strong><ul>${result.warnings.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : "";
         if (result.errors.length) {
-          $("#plusRunResult").hidden = true;
-          $("#copyPlusResult").disabled = true;
+          $("[data-plus-run-result]", dialog).hidden = true;
+          $("[data-plus-copy]", dialog).disabled = true;
           return;
         }
 
-        $("#plusPreview").value = result.output;
-        $("#plusRunResult").hidden = false;
-        $("#copyPlusResult").disabled = false;
+        $("[data-plus-preview]", dialog).value = result.output;
+        $("[data-plus-run-result]", dialog).hidden = false;
+        $("[data-plus-copy]", dialog).disabled = false;
         await copyText(result.output);
         fields.forEach(field => {
           if (field.type === "checkbox") field.checked = false;
@@ -1864,7 +1904,7 @@
 
       async function exportPlusJson() {
         const templates = (await getAllPlusTemplates()).map(({ lastValues, ...template }) => template);
-        const payload = { app: "Appunti Plus", appVersion: "release v2.5", version: 3, exportedAt: new Date().toISOString(), templates };
+        const payload = { app: "Appunti Plus", appVersion: "release v2.6", version: 3, exportedAt: new Date().toISOString(), templates };
         const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -1950,8 +1990,10 @@
         if (viewName === "plus-new") return renderPlusForm(null);
         if (viewName === "plus-edit") return renderPlusForm(id);
         if (viewName === "plus-backup") return renderPlusBackup();
-        if (viewName === "new") return renderForm(null);
-        if (viewName === "edit") return renderForm(id);
+        if (viewName === "new" || viewName === "edit") {
+          await renderList();
+          return openNoteWindow(viewName === "edit" ? id : null);
+        }
         if (viewName === "backup") return renderBackup();
         return renderList();
       }
@@ -2218,7 +2260,7 @@
         icon.href = new URL("fastappunti-icon.png", location.href).href;
         const stylesheet = doc.createElement("link");
         stylesheet.rel = "stylesheet";
-        stylesheet.href = new URL("styles.css?v=2.5", location.href).href;
+        stylesheet.href = new URL("styles.css?v=2.6", location.href).href;
         doc.head.append(viewport, icon, stylesheet);
 
         const root = doc.createElement("main");
@@ -2226,7 +2268,7 @@
         doc.body.appendChild(root);
 
         const script = doc.createElement("script");
-        script.src = new URL("quick-panel.js?v=2.5", location.href).href;
+        script.src = new URL("quick-panel.js?v=2.6", location.href).href;
         script.onload = () => {
           try {
             if (panelWindow.connectFastAppuntiPanel?.(channel.port2, token)) return;
@@ -2325,13 +2367,15 @@
         if (!ok) return;
         await deleteNote(id);
         await syncQuickPanelState();
+        closeAppWindow(findAppWindow(`note:${id}`));
         toast("Appunto eliminato.", "danger");
-        await transitionTo("list", null, true);
+        await transitionTo("list", null, state.currentView !== "list");
       }
 
       async function handleSubmit(form) {
         const now = new Date().toISOString();
-        const existing = state.editId ? await getNote(state.editId) : null;
+        const dialog = form.closest(".app-window");
+        const existing = dialog.dataset.noteId ? await getNote(dialog.dataset.noteId) : null;
         const note = {
           id: existing ? existing.id : uid(),
           title: form.title.value.trim(),
@@ -2351,16 +2395,17 @@
         await saveNote(note);
         await syncQuickPanelState();
         toast(existing ? "Modifiche salvate." : "Appunto salvato.", "success");
+        closeAppWindow(dialog);
         state.query = "";
         state.activeTag = "";
-        await transitionTo("list", null, true);
+        await transitionTo("list", null, state.currentView !== "list");
       }
 
       async function exportJson() {
         const notes = await getAllNotes();
         const payload = {
           app: "Appunti Rapidi",
-          appVersion: "release v2.5",
+          appVersion: "release v2.6",
           exportedAt: new Date().toISOString(),
           version: 1,
           notes
@@ -2415,6 +2460,34 @@
         let draggedCard = null;
         let ignoreCardClick = false;
 
+        document.addEventListener("pointerdown", event => {
+          if (event.target.closest("#taskbar")) return;
+          const dialog = event.target.closest(".app-window");
+          if (dialog) {
+            if (!dialog.classList.contains("is-active")) focusAppWindow(dialog);
+            return;
+          }
+          if (appWindows().some(item => item.classList.contains("is-active"))) {
+            appWindows().forEach(item => item.classList.remove("is-active"));
+            renderTaskbar();
+          }
+        });
+        document.addEventListener("focusin", event => {
+          const dialog = event.target.closest(".app-window");
+          if (dialog && !dialog.classList.contains("is-active")) focusAppWindow(dialog);
+        });
+        document.addEventListener("click", event => {
+          const dialog = event.target.closest(".app-window");
+          if (event.target.closest("[data-window-minimize]")) minimizeAppWindow(dialog);
+          if (event.target.closest("[data-window-close]")) closeAppWindow(dialog);
+          const item = event.target.closest("[data-window-target]");
+          if (!item) return;
+          const target = appWindows().find(win => win.dataset.windowId === item.dataset.windowTarget);
+          if (!target) return;
+          if (target.classList.contains("is-active") && !target.hidden) minimizeAppWindow(target);
+          else focusAppWindow(target);
+        });
+
         document.addEventListener("keydown", event => {
           if (event.key !== "Enter" || event.isComposing || event.shiftKey || event.ctrlKey || event.metaKey || event.altKey) return;
           if (event.target.matches("#placeholderName")) {
@@ -2422,7 +2495,7 @@
             insertPlusPlaceholder();
             return;
           }
-          if (!event.target.matches("#noteForm input, #plusTemplateForm input")) return;
+          if (!event.target.matches("[data-note-form] input, #plusTemplateForm input")) return;
           event.preventDefault();
           event.target.form.requestSubmit();
         });
@@ -2482,7 +2555,8 @@
           const routeLink = event.target.closest("[data-route]");
           if (routeLink) {
             event.preventDefault();
-            await transitionTo(routeLink.dataset.route, routeLink.dataset.id || null, true);
+            if (routeLink.dataset.route === "new") await openNoteWindow(null);
+            else await transitionTo(routeLink.dataset.route, routeLink.dataset.id || null, true);
             return;
           }
 
@@ -2506,7 +2580,7 @@
 
           if (actionButton.dataset.action === "favorite") await toggleNoteFavorite(id);
           if (actionButton.dataset.action === "copy") await copyNote(id, actionButton, card);
-          if (actionButton.dataset.action === "edit") await transitionTo("edit", id, true);
+          if (actionButton.dataset.action === "edit") await openNoteWindow(id);
           if (actionButton.dataset.action === "delete") await confirmDelete(id);
         });
 
@@ -2539,7 +2613,7 @@
         });
 
         document.addEventListener("submit", async event => {
-          if (event.target.id === "noteForm") {
+          if (event.target.matches("[data-note-form]")) {
             event.preventDefault();
             await handleSubmit(event.target);
           }
@@ -2551,20 +2625,22 @@
             catch (error) { toast(`Salvataggio non riuscito: ${error.message}`, "danger"); }
             finally { if (submit) submit.disabled = false; }
           }
-          if (event.target.id === "plusRunForm") {
+          if (event.target.matches("[data-plus-run-form]")) {
             event.preventDefault();
-            const submit = $("#submitPlusRun");
+            const dialog = event.target.closest(".app-window");
+            const submit = $("[data-plus-submit]", dialog);
             submit.disabled = true;
-            try { await submitPlusDialog(); }
+            try { await submitPlusDialog(dialog); }
             finally { submit.disabled = false; }
           }
         });
 
         document.addEventListener("input", event => {
           if (event.target.matches("[data-plus-value]")) {
-            $("#copyPlusResult").disabled = true;
-            $("#plusPreview").value = "";
-            $("#plusPreview").placeholder = "Campi modificati. Premi Genera per aggiornare il risultato.";
+            const dialog = event.target.closest(".app-window");
+            $("[data-plus-copy]", dialog).disabled = true;
+            $("[data-plus-preview]", dialog).value = "";
+            $("[data-plus-preview]", dialog).placeholder = "Campi modificati. Premi Genera per aggiornare il risultato.";
           }
           if (event.target.matches("[data-field-label], [data-field-checked-text]")) {
             const name = event.target.dataset.fieldLabel ?? event.target.dataset.fieldCheckedText;
@@ -2696,7 +2772,7 @@
             event.target.textContent = `Ultra rapida: ${state.plusUltra ? "ON" : "OFF"}`;
             setPlusUltraStatus(state.plusUltra ? "Modalità ultra rapida attiva: scegli una scheda per elaborare il contenuto degli appunti." : "");
           }
-          if (event.target.id === "deleteFromEdit" && state.editId) await confirmDelete(state.editId);
+          if (event.target.matches("[data-note-delete]")) await confirmDelete(event.target.closest(".app-window").dataset.noteId);
           if (event.target.id === "deleteExamples") await deleteExamples();
           if (event.target.id === "exportJson") await exportJson();
           if (event.target.id === "showPlaceholderBuilder") {
@@ -2725,9 +2801,8 @@
               field.focus();
             }
           }
-          if (event.target.id === "closePlusRunDialog") $("#plusRunDialog").close();
-          if (event.target.id === "copyPlusResult" && !event.target.disabled) {
-            await copyText($("#plusPreview").value);
+          if (event.target.matches("[data-plus-copy]") && !event.target.disabled) {
+            await copyText($("[data-plus-preview]", event.target.closest(".app-window")).value);
             toast("Testo copiato negli appunti.", "success");
           }
           if (event.target.id === "exportPlusJson") await exportPlusJson();
