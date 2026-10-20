@@ -923,6 +923,9 @@
     .form-row > input[type="checkbox"] { grid-column: 1; grid-row: 1; margin: 0; }
     .form-row:has(> input[type="checkbox"]) > label { grid-column: 2; grid-row: 1; cursor: pointer; }
     .form-row:has(> input[type="checkbox"]) > :is(small, .field-error) { grid-column: 1 / -1; }
+    .date-input { position: relative; display: flex; gap: 6px; }
+    .date-input > .field { flex: 1; min-width: 0; }
+    .date-picker-proxy { position: absolute; right: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; border: 0; padding: 0; }
     .plus-editor {
       grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr);
       grid-template-rows: auto minmax(0, 1fr) auto;

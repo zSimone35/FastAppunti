@@ -613,7 +613,7 @@
           return {
             name: String(field.name || ""),
             kind: "manual",
-            inputType: ["textarea", "checkbox"].includes(field.inputType) ? field.inputType : "text",
+            inputType: ["textarea", "checkbox", "date"].includes(field.inputType) ? field.inputType : "text",
             required: field.inputType !== "checkbox" && field.required !== false,
             label: String(field.label || ""),
             checkedText: String(field.checkedText || ""),
@@ -1324,6 +1324,7 @@
                     <option value="text" ${field.inputType === "text" ? "selected" : ""}>Riga singola</option>
                     <option value="textarea" ${field.inputType === "textarea" ? "selected" : ""}>Testo multilinea</option>
                     <option value="checkbox" ${field.inputType === "checkbox" ? "selected" : ""}>Checkbox · testo fisso</option>
+                    <option value="date" ${field.inputType === "date" ? "selected" : ""}>Data</option>
                   </select>
                   <div class="field-error" data-error-for="${escapeHtml(target)}"></div>
                 </div>
@@ -1443,7 +1444,7 @@
               </div>
               <div class="form-row" id="builderInputTypeRow">
                 <label for="placeholderInputType">Inserimento</label>
-                <select class="field" id="placeholderInputType"><option value="text">Riga singola</option><option value="textarea">Testo multilinea</option><option value="checkbox">Checkbox · testo fisso</option></select>
+                <select class="field" id="placeholderInputType"><option value="text">Riga singola</option><option value="textarea">Testo multilinea</option><option value="checkbox">Checkbox · testo fisso</option><option value="date">Data</option></select>
               </div>
               <div class="form-row" id="builderCalculationRow" hidden>
                 <label for="placeholderOperation">Operazione</label>
@@ -1830,6 +1831,8 @@
                   : field.inputType === "textarea"
                   ? `<textarea class="field" id="plusValue-${win}-${escapeHtml(field.name)}" data-plus-value="${escapeHtml(field.name)}" ${field.required !== false ? "required" : ""}></textarea>
                     <small class="field-resize-hint">Per cambiare l’altezza, trascina su o giù l’angolo rigato in basso a destra.</small>`
+                  : field.inputType === "date"
+                  ? `<div class="date-input"><input class="field" id="plusValue-${win}-${escapeHtml(field.name)}" data-plus-value="${escapeHtml(field.name)}" placeholder="gg/mm/aaaa" ${field.required !== false ? "required" : ""} /><button type="button" class="btn" data-date-picker title="Scegli dal calendario" aria-label="Scegli dal calendario">📅</button><input type="date" class="date-picker-proxy" tabindex="-1" aria-hidden="true" /></div>`
                   : `<input class="field" id="plusValue-${win}-${escapeHtml(field.name)}" data-plus-value="${escapeHtml(field.name)}" ${field.required !== false ? "required" : ""} />`}
                 ${field.inputType === "textarea" && field.lineInputPattern && field.lineOutputPattern
                   ? `<aside class="list-instructions"><strong>Trasformazione automatica</strong><span>Input: ${escapeHtml(field.lineInputPattern)}\nOutput: ${escapeHtml(field.lineOutputPattern)}</span></aside>`
@@ -1871,6 +1874,22 @@
           event.currentTarget.requestSubmit(submit);
         });
         showAppWindow(dialog);
+      }
+
+      function openDatePicker(button) {
+        const wrapper = button.closest(".date-input");
+        const text = wrapper.querySelector("input.field");
+        const proxy = wrapper.querySelector(".date-picker-proxy");
+        const match = text.value.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        proxy.value = match ? `${match[3]}-${match[2].padStart(2, "0")}-${match[1].padStart(2, "0")}` : "";
+        proxy.onchange = () => {
+          if (!proxy.value) return;
+          const [year, month, day] = proxy.value.split("-");
+          text.value = `${day}/${month}/${year}`;
+          text.dispatchEvent(new Event("input", { bubbles: true }));
+          text.focus();
+        };
+        try { proxy.showPicker(); } catch { proxy.focus(); proxy.click(); }
       }
 
       async function submitPlusDialog(dialog) {
@@ -2477,6 +2496,8 @@
           if (dialog && !dialog.classList.contains("is-active")) focusAppWindow(dialog);
         });
         document.addEventListener("click", event => {
+          const datePicker = event.target.closest("[data-date-picker]");
+          if (datePicker) openDatePicker(datePicker);
           const dialog = event.target.closest(".app-window");
           if (event.target.closest("[data-window-minimize]")) minimizeAppWindow(dialog);
           if (event.target.closest("[data-window-close]")) closeAppWindow(dialog);

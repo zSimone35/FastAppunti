@@ -237,7 +237,36 @@
       if (field.inputType !== "checkbox") input.value = template.lastValues?.[field.name] || "";
       label.htmlFor = `quickPlus-${field.name}`;
       input.id = `quickPlus-${field.name}`;
-      row.append(label, input);
+      if (field.inputType === "date") {
+        input.placeholder = "gg/mm/aaaa";
+        const wrapper = document.createElement("div");
+        wrapper.className = "date-input";
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "btn";
+        button.textContent = "📅";
+        button.title = "Scegli dal calendario";
+        button.setAttribute("aria-label", "Scegli dal calendario");
+        const proxy = document.createElement("input");
+        proxy.type = "date";
+        proxy.className = "date-picker-proxy";
+        proxy.tabIndex = -1;
+        proxy.setAttribute("aria-hidden", "true");
+        button.addEventListener("click", () => {
+          const match = input.value.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+          proxy.value = match ? `${match[3]}-${match[2].padStart(2, "0")}-${match[1].padStart(2, "0")}` : "";
+          try { proxy.showPicker(); } catch { proxy.focus(); proxy.click(); }
+        });
+        proxy.addEventListener("change", () => {
+          if (!proxy.value) return;
+          const [year, month, day] = proxy.value.split("-");
+          input.value = `${day}/${month}/${year}`;
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+          input.focus();
+        });
+        wrapper.append(input, button, proxy);
+        row.append(label, wrapper);
+      } else row.append(label, input);
       if (field.inputType === "checkbox") {
         const hint = document.createElement("small");
         hint.textContent = field.checkedText;
