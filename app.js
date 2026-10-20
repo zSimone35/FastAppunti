@@ -1923,7 +1923,7 @@
 
       async function exportPlusJson() {
         const templates = (await getAllPlusTemplates()).map(({ lastValues, ...template }) => template);
-        const payload = { app: "Appunti Plus", appVersion: "release v2.6", version: 3, exportedAt: new Date().toISOString(), templates };
+        const payload = { app: "Appunti Plus", appVersion: "release v2.7", version: 3, exportedAt: new Date().toISOString(), templates };
         const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -2279,7 +2279,7 @@
         icon.href = new URL("fastappunti-icon.png", location.href).href;
         const stylesheet = doc.createElement("link");
         stylesheet.rel = "stylesheet";
-        stylesheet.href = new URL("styles.css?v=2.6", location.href).href;
+        stylesheet.href = new URL("styles.css?v=2.7", location.href).href;
         doc.head.append(viewport, icon, stylesheet);
 
         const root = doc.createElement("main");
@@ -2287,7 +2287,7 @@
         doc.body.appendChild(root);
 
         const script = doc.createElement("script");
-        script.src = new URL("quick-panel.js?v=2.6", location.href).href;
+        script.src = new URL("quick-panel.js?v=2.7", location.href).href;
         script.onload = () => {
           try {
             if (panelWindow.connectFastAppuntiPanel?.(channel.port2, token)) return;
@@ -2424,7 +2424,7 @@
         const notes = await getAllNotes();
         const payload = {
           app: "Appunti Rapidi",
-          appVersion: "release v2.6",
+          appVersion: "release v2.7",
           exportedAt: new Date().toISOString(),
           version: 1,
           notes

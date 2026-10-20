@@ -136,6 +136,7 @@ The app adds up the last number of each line and produces the complete text, wit
 | **Simple fields** | Single-line or multi-line text |
 | **Optional fields** | If left empty, they are left out of the final text |
 | **Checkboxes** | Add a fixed sentence only when ticked |
+| **Dates** | Type the date or pick it from a calendar (gg/mm/aaaa) |
 | **Calculations** | **Sum**, **multiplication** and **subtraction** of the numbers found in a field |
 | **Per-line prefix** | Automatically puts a symbol in front of every line (`•`, `✔`, `☐`…) |
 | **Reformatting** | Rewrites each line in a different format (e.g. `Mario Rossi - 7,5` → `• Mario Rossi: 7,5 h`) |
@@ -227,4 +228,4 @@ node test-fields.cjs
 
 ## License
 
-Released under the [MIT License](LICENSE). Current version: **release 2.6**.
+Released under the [MIT License](LICENSE). Current version: **release 2.7**.
